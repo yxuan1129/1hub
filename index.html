@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1hub — Smart Solutions. Real Impact.</title>
+<meta name="description" content="1hub builds websites, landing pages, event registration, QR check-in, live tracking, analytics and apps — one hub for every digital touchpoint.">
+<link rel="icon" href="assets/Icon_logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.143.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.143.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+  :root{
+    --cyan:#00d4ff;
+    --blue:#0066ff;
+    --violet:#7b61ff;
+    --void:#0a0f1f;
+    --surface:#0d1428;
+    --surface-2:#101a33;
+    --border:rgba(255,255,255,.09);
+    --text:#ffffff;
+    --text-dim:rgba(255,255,255,.68);
+    --text-faint:rgba(255,255,255,.42);
+    --grad:linear-gradient(120deg,var(--cyan) 0%,var(--blue) 55%,var(--violet) 100%);
+    --radius:16px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--void);color:var(--text);}
+  body{
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,h4{
+    font-family:'Space Grotesk',sans-serif;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  p{margin:0;}
+  a{color:inherit;text-decoration:none;}
+  .mono{
+    font-family:'JetBrains Mono',monospace;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  ::selection{background:var(--violet);color:#fff;}
+
+  img{max-width:100%;display:block;}
+
+  /* ---------- layout scaffolding ---------- */
+  #scene{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    z-index:0;
+    display:block;
+  }
+  #scroll-host{
+    position:relative;
+    height:300vh;
+    z-index:1;
+  }
+  #scroll-hint{
+    position:fixed;
+    bottom:28px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:3;
+    font-size:11px;
+    color:rgba(255,255,255,.4);
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    font-family:'JetBrains Mono',monospace;
+    pointer-events:none;
+    transition:opacity .4s ease;
+  }
+
+  .hero-content{
+    position:fixed;
+    inset:0;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:0 24px;
+    pointer-events:none;
+  }
+  .hero-content .hero-inner{pointer-events:auto;}
+  .hero-logo{
+    width:min(58vw,300px);
+    margin:0 auto 28px;
+    filter:drop-shadow(0 0 40px rgba(0,212,255,.25));
+  }
+  .hero-eyebrow{
+    color:var(--cyan);
+    font-size:11px;
+    margin-bottom:18px;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+  }
+  .hero-eyebrow::before,.hero-eyebrow::after{
+    content:"";
+    width:24px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--cyan));
+  }
+  .hero-eyebrow::after{background:linear-gradient(90deg,var(--cyan),transparent);}
+  .hero-content h1{
+    font-size:clamp(2rem,6vw,3.6rem);
+    font-weight:700;
+    max-width:16ch;
+    margin:0 auto 18px;
+  }
+  .hero-content h1 span{
+    background:var(--grad);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .hero-sub{
+    max-width:46ch;
+    margin:0 auto 34px;
+    color:var(--text-dim);
+    font-size:1.05rem;
+  }
+  .hero-ctas{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  /* buttons */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:14px 26px;
+    border-radius:999px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:.95rem;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:transform .25s ease, box-shadow .25s ease, background .25s ease, border-color .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{
+    background:var(--grad);
+    color:#04101c;
+    box-shadow:0 10px 30px -8px rgba(0,150,255,.55);
+  }
+  .btn-primary:hover{box-shadow:0 14px 38px -6px rgba(0,180,255,.7);}
+  .btn-ghost{
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    border-color:var(--border);
+    backdrop-filter:blur(6px);
+  }
+  .btn-ghost:hover{border-color:rgba(0,212,255,.5);background:rgba(0,212,255,.06);}
+
+  /* nav */
+  .nav{
+    position:fixed;
+    top:0;left:0;right:0;
+    z-index:10;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 6vw;
+    background:rgba(10,15,31,.55);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .nav-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+  }
+  .nav-brand img{height:42px;width:auto;}
+  .nav-links{
+    display:flex;
+    gap:34px;
+    list-style:none;
+    margin:0;padding:0;
+    font-size:.9rem;
+    color:var(--text-dim);
+  }
+  .nav-links a{transition:color .2s ease;}
+  .nav-links a:hover{color:var(--cyan);}
+  .nav-actions{display:flex;align-items:center;gap:18px;}
+  .nav-toggle{
+    display:none;
+    width:38px;height:38px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.03);
+    color:#fff;
+    align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+
+  @media (max-width:860px){
+    .nav-links{
+      position:fixed;
+      top:66px;left:0;right:0;
+      flex-direction:column;
+      gap:0;
+      background:rgba(8,12,26,.98);
+      border-bottom:1px solid var(--border);
+      max-height:0;
+      overflow:hidden;
+      transition:max-height .3s ease;
+    }
+    .nav-links.open{max-height:320px;}
+    .nav-links li{width:100%;}
+    .nav-links a{
+      display:block;
+      padding:16px 6vw;
+      border-top:1px solid rgba(255,255,255,.05);
+    }
+    .nav-toggle{display:flex;}
+    .nav-actions .btn-primary{display:none;}
+  }
+
+  /* main content sits above canvas + hero-content, opaque */
+  main{
+    position:relative;
+    z-index:2;
+    background:var(--void);
+  }
+
+  section{
+    padding:120px 6vw;
+    position:relative;
+  }
+  .eyebrow{
+    font-size:11px;
+    color:var(--cyan);
+    margin-bottom:14px;
+    display:block;
+  }
+  .section-head{
+    max-width:640px;
+    margin:0 0 60px;
+  }
+  .section-head h2{
+    font-size:clamp(1.8rem,3.4vw,2.6rem);
+    font-weight:700;
+    margin-bottom:16px;
+  }
+  .section-head p{
+    color:var(--text-dim);
+    font-size:1.05rem;
+  }
+
+  /* ---------- services ---------- */
+  #services{
+    background:
+      radial-gradient(circle at 15% 20%, rgba(0,212,255,.07), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(123,97,255,.07), transparent 40%),
+      var(--void);
+    border-top:1px solid rgba(255,255,255,.05);
+  }
+  .hub-map{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:.5;
+  }
+  .services-grid{
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .service-card{
+    background:var(--surface);
+    padding:34px 28px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    position:relative;
+    opacity:0;
+    transform:translateY(24px);
+    transition:background .3s ease, transform .55s cubic-bezier(.22,1,.36,1),
+               opacity .55s ease, box-shadow .3s ease;
+  }
+  .services-grid.in-view .service-card{
+    opacity:1;
+    transform:translateY(0);
+  }
+  .service-card:nth-child(4n+1){transition-delay:.02s;}
+  .service-card:nth-child(4n+2){transition-delay:.10s;}
+  .service-card:nth-child(4n+3){transition-delay:.18s;}
+  .service-card:nth-child(4n+4){transition-delay:.26s;}
+  .service-card:hover{
+    background:var(--surface-2);
+    transform:translateY(-6px);
+    box-shadow:0 18px 40px -20px color-mix(in srgb, var(--accent, var(--cyan)) 65%, transparent);
+    z-index:1;
+  }
+  .service-icon{
+    width:58px;height:58px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:14px;
+    background:color-mix(in srgb, var(--accent, var(--cyan)) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent, var(--cyan)) 40%, transparent);
+    box-shadow:0 0 22px -6px color-mix(in srgb, var(--accent, var(--cyan)) 70%, transparent);
+    color:var(--accent, var(--cyan));
+    transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease;
+  }
+  .service-card:hover .service-icon{
+    transform:scale(1.1) rotate(-4deg);
+    box-shadow:0 0 32px -4px color-mix(in srgb, var(--accent, var(--cyan)) 85%, transparent);
+  }
+  .service-icon svg{width:30px;height:30px;}
+  .service-card.accent-cyan{--accent:var(--cyan);}
+  .service-card.accent-blue{--accent:var(--blue);}
+  .service-card.accent-violet{--accent:var(--violet);}
+  .service-card.accent-cyan .service-num,
+  .service-card.accent-blue .service-num,
+  .service-card.accent-violet .service-num{color:var(--accent);opacity:.85;}
+  .service-card h3{
+    font-size:1.05rem;
+    font-weight:600;
+  }
+  .service-card p{
+    color:var(--text-dim);
+    font-size:.92rem;
+  }
+  .service-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:.72rem;
+    color:var(--text-faint);
+    transition:transform .3s ease;
+  }
+  .service-card:hover .service-num{transform:translateX(2px);}
+
+  @media (max-width:1000px){
+    .services-grid{grid-template-columns:repeat(2,1fr);}
+    .service-card:nth-child(2n+1){transition-delay:.02s;}
+    .service-card:nth-child(2n+2){transition-delay:.12s;}
+  }
+  @media (max-width:560px){
+    .services-grid{grid-template-columns:1fr;}
+    .service-card{transition-delay:0s !important;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .service-card{opacity:1;transform:none;transition:none;}
+    .service-card:hover{transform:none;}
+    .service-card:hover .service-icon{transform:none;}
+  }
+
+  /* ---------- why us ---------- */
+  #why{
+    background:var(--surface);
+    border-top:1px solid rgba(255,255,255,.05);
+    border-bottom:1px solid rgba(255,255,255,.05);
+  }
+  .why-wrap{
+    display:grid;
+    grid-template-columns:1.1fr 1fr;
+    gap:60px;
+    align-items:center;
+  }
+  .pill-cloud{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .pill{
+    padding:10px 18px;
+    border-radius:999px;
+    font-size:.85rem;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.02);
+    color:var(--text-dim);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    opacity:0;
+    transform:translateY(14px);
+    transition:transform .45s cubic-bezier(.22,1,.36,1), opacity .45s ease,
+               background .25s ease, border-color .25s ease, color .25s ease, box-shadow .25s ease;
+  }
+  .pill-cloud.in-view .pill{
+    opacity:1;
+    transform:translateY(0);
+  }
+  .pill:hover{
+    color:var(--text);
+    border-color:rgba(0,212,255,.55);
+    background:rgba(0,212,255,.08);
+    box-shadow:0 0 22px -6px rgba(0,212,255,.55);
+    transform:translateY(-3px);
+  }
+  .pill i{
+    width:6px;height:6px;
+    border-radius:50%;
+    background:var(--grad);
+    display:inline-block;
+    transition:transform .3s ease;
+  }
+  .pill:hover i{
+    transform:scale(1.6);
+    box-shadow:0 0 10px 2px rgba(0,212,255,.7);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pill{opacity:1;transform:none;transition:none;}
+  }
+  @media (max-width:900px){
+    .why-wrap{grid-template-columns:1fr;}
+  }
+
+  /* ---------- process ---------- */
+  #process{background:var(--void);}
+  .process-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .process-card{
+    background:var(--surface);
+    padding:40px 32px;
+  }
+  .process-card .num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:.8rem;
+    color:var(--cyan);
+    margin-bottom:22px;
+    display:block;
+  }
+  .process-card h3{font-size:1.15rem;margin-bottom:10px;}
+  .process-card p{color:var(--text-dim);font-size:.92rem;}
+  @media (max-width:800px){
+    .process-grid{grid-template-columns:1fr;}
+  }
+
+  /* ---------- cta ---------- */
+  #contact{
+    background:var(--void);
+    border-top:1px solid rgba(255,255,255,.05);
+  }
+  .cta-box{
+    position:relative;
+    border-radius:24px;
+    padding:70px 6vw;
+    text-align:center;
+    background:linear-gradient(180deg,rgba(0,212,255,.08),rgba(123,97,255,.05));
+    border:1px solid rgba(0,212,255,.2);
+    overflow:hidden;
+  }
+  .cta-box::before{
+    content:"";
+    position:absolute;
+    width:520px;height:520px;
+    background:radial-gradient(circle,rgba(0,212,255,.25),transparent 65%);
+    top:-260px;left:50%;
+    transform:translateX(-50%);
+    pointer-events:none;
+  }
+  .cta-box h2{
+    font-size:clamp(1.8rem,3.6vw,2.6rem);
+    margin-bottom:16px;
+    position:relative;
+  }
+  .cta-box p{
+    color:var(--text-dim);
+    max-width:44ch;
+    margin:0 auto 30px;
+    position:relative;
+  }
+  .cta-box .hero-ctas{position:relative;}
+
+  /* ---------- footer ---------- */
+  footer{
+    padding:50px 6vw 36px;
+    display:flex;
+    flex-direction:column;
+    gap:28px;
+    background:var(--void);
+  }
+  .footer-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:24px;
+    padding-bottom:28px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .footer-brand{display:flex;align-items:center;gap:10px;}
+  .footer-brand img{height:22px;}
+  .footer-links{
+    display:flex;gap:26px;
+    list-style:none;margin:0;padding:0;
+    font-size:.88rem;color:var(--text-dim);
+  }
+  .footer-links a:hover{color:var(--cyan);}
+  .footer-bottom{
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    font-size:.8rem;
+    color:var(--text-faint);
+  }
+  .footer-bottom a:hover{color:var(--cyan);}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    .btn:hover{transform:none;}
+  }
+
+  @media (max-width:640px){
+    section{padding:90px 6vw;}
+    .hero-logo{margin-bottom:20px;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div id="scroll-hint">scroll ↓</div>
+
+<!-- hidden defs used by every inline service icon -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="hubGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="55%" stop-color="#0066ff"/>
+      <stop offset="100%" stop-color="#7b61ff"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<nav class="nav">
+  <a href="#home" class="nav-brand">
+    <img src="assets/Icon_logo.png" alt="1hub icon">
+    1hub
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#why">Why 1hub</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="#contact" class="btn btn-primary">Start a project</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</nav>
+
+<div id="scroll-host">
+  <div class="hero-content" id="home">
+    <div class="hero-inner">
+      <span class="hero-eyebrow mono"><span style="color:#ffffff;">smart solutions.</span> real impact.</span>
+      <img class="hero-logo" src="assets/Main_logo.png" alt="1hub logo">
+      <h1>One hub for every <span>digital touchpoint</span></h1>
+      <p class="hero-sub">Websites, landing pages, event registration, QR check-in, live tracking, analytics and apps — designed, built and connected under one roof.</p>
+      <div class="hero-ctas">
+        <a href="#contact" class="btn btn-primary">Start a project</a>
+        <a href="#services" class="btn btn-ghost">Explore services</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <section id="services">
+    <div class="section-head">
+      <span class="eyebrow mono">what we build</span>
+      <h2>Eight services, one connected hub</h2>
+      <p>Every piece of your digital presence — web, events, and data — designed to work together instead of living in separate tools.</p>
+    </div>
+
+    <div class="services-grid" id="servicesGrid">
+
+      <div class="service-card accent-cyan">
+        <span class="service-num">01</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="14" height="11" rx="1.5"/>
+            <line x1="2" y1="7.4" x2="16" y2="7.4"/>
+            <circle cx="4.4" cy="5.7" r=".35" fill="currentColor" stroke="none"/>
+            <line x1="5" y1="11" x2="12" y2="11"/>
+            <line x1="5" y1="13" x2="9.5" y2="13"/>
+            <path d="M13.5 20.5l8-8-8.2 2.1.9 3 3-.9-3.7 3.8z"/>
+          </svg>
+        </div>
+        <h3>Landing pages</h3>
+        <p>Fast, conversion-focused pages built to launch campaigns and validate ideas in days, not weeks.</p>
+      </div>
+
+      <div class="service-card accent-blue">
+        <span class="service-num">02</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="12" rx="1.5"/>
+            <line x1="8" y1="20" x2="16" y2="20"/>
+            <line x1="12" y1="16" x2="12" y2="20"/>
+            <rect x="6" y="7" width="6" height="4" rx=".6"/>
+            <line x1="14" y1="8" x2="18" y2="8"/>
+            <line x1="14" y1="10.4" x2="18" y2="10.4"/>
+            <line x1="6" y1="13" x2="18" y2="13"/>
+          </svg>
+        </div>
+        <h3>Website development</h3>
+        <p>Custom, responsive websites engineered for growth — from first launch to full-scale platform.</p>
+      </div>
+
+      <div class="service-card accent-violet">
+        <span class="service-num">03</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2.5" y="2.5" width="11" height="16" rx="1.5"/>
+            <path d="M6.5 2.5V2h3v.5"/>
+            <circle cx="8" cy="7.6" r="1.6"/>
+            <path d="M4.8 13.5c.5-1.7 1.8-2.6 3.2-2.6s2.7.9 3.2 2.6"/>
+            <rect x="14.5" y="7.5" width="7" height="12.5" rx="1.4"/>
+            <rect x="16.3" y="10" width="3.4" height="3.4"/>
+            <line x1="16.3" y1="16" x2="19.7" y2="16"/>
+          </svg>
+        </div>
+        <h3>Event registration &amp; check-in</h3>
+        <p>End-to-end registration systems and on-site check-in flows built for events of any size.</p>
+      </div>
+
+      <div class="service-card accent-blue">
+        <span class="service-num">04</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="14" height="11" rx="1.5"/>
+            <line x1="2" y1="7.4" x2="16" y2="7.4"/>
+            <line x1="5" y1="11" x2="11" y2="11"/>
+            <circle cx="18" cy="17" r="3"/>
+            <path d="M18 12.7v1.5M18 19.8v1.5M22.3 17h-1.5M14.7 17h-1.5M21 14l-1.1 1.1M16.1 18.9L15 20M21 20l-1.1-1.1M16.1 15.1L15 14"/>
+          </svg>
+        </div>
+        <h3>Registration websites</h3>
+        <p>Dedicated registration portals built into your site — signup, payment and confirmation in one flow.</p>
+      </div>
+
+      <div class="service-card accent-cyan">
+        <span class="service-num">05</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8.5V6a2 2 0 012-2h2.5"/>
+            <path d="M20 8.5V6a2 2 0 00-2-2h-2.5"/>
+            <path d="M4 15.5V18a2 2 0 002 2h2.5"/>
+            <path d="M20 15.5V18a2 2 0 01-2 2h-2.5"/>
+            <rect x="8.3" y="8.3" width="3" height="3" fill="currentColor" stroke="none"/>
+            <rect x="12.7" y="8.3" width="3" height="3"/>
+            <rect x="8.3" y="12.7" width="3" height="3"/>
+            <rect x="12.7" y="12.7" width="3" height="3" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <h3>QR check-in</h3>
+        <p>Scan-based entry that gets attendees through the door in seconds, no queues, no paper lists.</p>
+      </div>
+
+      <div class="service-card accent-violet">
+        <span class="service-num">06</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="18.5" rx="8.5" ry="2.2" stroke-dasharray="1.6 2"/>
+            <path d="M12 2.5a5.2 5.2 0 015.2 5.2c0 3.9-5.2 10-5.2 10s-5.2-6.1-5.2-10A5.2 5.2 0 0112 2.5z"/>
+            <circle cx="12" cy="7.7" r="1.8" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <h3>Live tracking</h3>
+        <p>Real-time visibility into attendance, movement and event flow, updating as it happens.</p>
+      </div>
+
+      <div class="service-card accent-blue">
+        <span class="service-num">07</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="20.5" x2="4" y2="13.5"/>
+            <line x1="9.3" y1="20.5" x2="9.3" y2="9"/>
+            <line x1="14.6" y1="20.5" x2="14.6" y2="15.5"/>
+            <line x1="20" y1="20.5" x2="20" y2="6"/>
+            <path d="M3 9.5l4.3-4 4 3 5.2-5.5 4.5 3.8" stroke-linejoin="round"/>
+            <path d="M17.4 3l3.6.8-.6 3.6" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Analytics</h3>
+        <p>Dashboards that turn raw event and website data into decisions your team can act on.</p>
+      </div>
+
+      <div class="service-card accent-cyan">
+        <span class="service-num">08</span>
+        <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="11" height="17.5" rx="2"/>
+            <line x1="4" y1="18" x2="15" y2="18"/>
+            <g transform="translate(14.5,2.2)">
+              <rect x="0" y="2.4" width="4.6" height="4.6" rx=".7" fill="currentColor" stroke="none" opacity=".9"/>
+              <rect x="3.4" y="0" width="4.6" height="4.6" rx=".7" fill="currentColor" stroke="none" opacity=".55"/>
+            </g>
+          </svg>
+        </div>
+        <h3>App development</h3>
+        <p>Native and cross-platform apps that extend your hub beyond the browser.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="why-wrap">
+      <div>
+        <span class="eyebrow mono">why 1hub</span>
+        <h2 style="font-size:clamp(1.8rem,3.4vw,2.6rem);margin-bottom:18px;">Built to be the one system you don't have to think about</h2>
+        <p style="color:var(--text-dim);font-size:1.05rem;max-width:52ch;">
+          Most teams stitch together a website builder, a registration tool, a check-in app and a spreadsheet for
+          analytics. 1hub replaces the stitching — every service is designed to share data and design language,
+          so your site, your event and your reporting all speak the same language.
+        </p>
+      </div>
+      <div class="pill-cloud" id="pillCloud">
+        <span class="pill" style="transition-delay:.00s"><i></i>Innovative</span>
+        <span class="pill" style="transition-delay:.04s"><i></i>Smart</span>
+        <span class="pill" style="transition-delay:.08s"><i></i>Digital</span>
+        <span class="pill" style="transition-delay:.12s"><i></i>Connected</span>
+        <span class="pill" style="transition-delay:.16s"><i></i>Growth</span>
+        <span class="pill" style="transition-delay:.20s"><i></i>Reliable</span>
+        <span class="pill" style="transition-delay:.24s"><i></i>Secure</span>
+        <span class="pill" style="transition-delay:.28s"><i></i>Professional</span>
+        <span class="pill" style="transition-delay:.32s"><i></i>Impactful</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="process">
+    <div class="section-head">
+      <span class="eyebrow mono">how we work</span>
+      <h2>From brief to launch, in three moves</h2>
+      <p>A straightforward process built around momentum — no scope creep, no guessing where things stand.</p>
+    </div>
+    <div class="process-grid">
+      <div class="process-card">
+        <span class="num mono">01 / discover</span>
+        <h3>Discover</h3>
+        <p>We map what you're building — the site, the event, the data you need back — and agree the plan before a line of code is written.</p>
+      </div>
+      <div class="process-card">
+        <span class="num mono">02 / build</span>
+        <h3>Build</h3>
+        <p>Design and development move together, with working previews along the way instead of a single reveal at the end.</p>
+      </div>
+      <div class="process-card">
+        <span class="num mono">03 / launch</span>
+        <h3>Launch &amp; support</h3>
+        <p>We ship, monitor the first live moments — check-in, traffic, tracking — and stay on to support what comes next.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="cta-box">
+      <span class="eyebrow mono" style="justify-content:center;display:flex;">get started</span>
+      <h2>Ready for real impact?</h2>
+      <p>Tell us what you're building — a website, an event, or the whole hub — and we'll shape a plan around it.</p>
+      <div class="hero-ctas">
+        <a href="mailto:admin@1hub.pro?subject=New%20project%20inquiry%20%E2%80%94%201hub" class="btn btn-primary">Email 1hub</a>
+        <a href="mailto:admin@n1collectivegroup.com?subject=Inquiry%20%E2%80%94%20N1%20Collective%20Group" class="btn btn-ghost">Email N1 Collective Group</a>
+        <a href="#services" class="btn btn-ghost">See all services</a>
+      </div>
+      <p class="mono" style="margin-top:22px;font-size:11px;color:var(--text-faint);position:relative;">
+        powered by — N1 Collective Group
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <img src="assets/Icon_logo.png" alt="1hub">
+        <strong style="font-family:'Space Grotesk',sans-serif;">1hub</strong>
+      </div>
+      <ul class="footer-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#why">Why 1hub</a></li>
+        <li><a href="#process">Process</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 1hub. All rights reserved.</span>
+      <span style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;">
+        <a href="mailto:admin@1hub.pro?subject=New%20project%20inquiry%20%E2%80%94%201hub">admin@1hub.pro</a>
+        <span style="color:var(--text-faint);">·</span>
+        <span>Powered by <a href="mailto:admin@n1collectivegroup.com?subject=Inquiry%20%E2%80%94%20N1%20Collective%20Group">N1 Collective Group</a></span>
+        <span style="color:var(--text-faint);">·</span>
+        <a href="https://instagram.com/1hub.pro" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="5"/>
+            <circle cx="12" cy="12" r="4"/>
+            <circle cx="17.2" cy="6.8" r=".6" fill="currentColor" stroke="none"/>
+          </svg>
+          @1hub.pro
+        </a>
+      </span>
+      <span><span style="color:#ffffff;">Smart solutions.</span> <span style="color:var(--cyan);">Real impact.</span></span>
+    </div>
+  </footer>
+
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { GammaCorrectionShader } from 'three/addons/shaders/GammaCorrectionShader.js';
+import { CopyShader } from 'three/addons/shaders/CopyShader.js';
+
+/* ---------------- brand-recolored fixed parameters ---------------- */
+const bgColor       = '#0a0f1f';
+const flameColor    = '#7b61ff';
+const flameColor2   = '#00d4ff';
+const flameAmt      = 0.2;
+const atmoColor     = '#00d4ff';
+const atmoCount     = 300;
+const atmoSize      = 24;
+const atmoSpeed     = 1.0;
+const colorLow      = '#0a0f1f';
+const colorHigh     = '#00d4ff';
+const opacity       = 0.26;
+const pointSize     = 5.5;
+const brightness    = 0.45;
+const waveHeight    = 3;
+const flow          = 1;
+const tilt          = 0;
+const scale         = 0.275;
+const scrollRise    = 1.0;
+const camStartY = 7, camStartZ = 16;
+const camEndY = 0.8, camEndZ = -2;
+const lookStartZ = 2, lookEndZ = -16;
+const parallax = 1.2;
+const pointerRadius = 7.0;
+const pointerStrength = 0.9;
+
+const Lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function hexToVec3(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+}
+
+const SNOISE = `
+vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+float snoise(vec3 v){
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0); const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+  vec3 i = floor(v + dot(v, C.yyy)); vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz); vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy); vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + 1.0 * C.xxx; vec3 x2 = x0 - i2 + 2.0 * C.xxx; vec3 x3 = x0 - 1.0 + 3.0 * C.xxx;
+  i = mod(i, 289.0);
+  vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+  float n_ = 1.0/7.0; vec3 ns = n_ * D.wyz - D.xzx;
+  vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
+  vec4 x_ = floor(j * ns.z); vec4 y_ = floor(j - 7.0 * x_);
+  vec4 x = x_ *ns.x + ns.yyyy; vec4 y = y_ *ns.x + ns.yyyy; vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4(x.xy, y.xy); vec4 b1 = vec4(x.zw, y.zw);
+  vec4 s0 = floor(b0)*2.0 + 1.0; vec4 s1 = floor(b1)*2.0 + 1.0; vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+  vec3 p0 = vec3(a0.xy,h.x); vec3 p1 = vec3(a0.zw,h.y); vec3 p2 = vec3(a1.xy,h.z); vec3 p3 = vec3(a1.zw,h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+  vec4 m = max(0.5 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0); m = m * m;
+  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+}
+`;
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGL1Renderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.Fog(0x000000, 0, 15);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 400);
+camera.position.set(0, 7, 16);
+
+const LAYERS = { NONE: 0, TORUS_SCENE: 1, BLOOM_SCENE: 2, ENTIRE_SCENE: 3 };
+camera.layers.enable(LAYERS.TORUS_SCENE);
+camera.layers.enable(LAYERS.BLOOM_SCENE);
+camera.layers.enable(LAYERS.ENTIRE_SCENE);
+scene.add(camera);
+
+/* ---------------- points sheet ---------------- */
+const group = new THREE.Group();
+scene.add(group);
+
+const geo = new THREE.SphereGeometry(4.2, 200, 600);
+const uniforms = {
+  uTime: { value: 0 },
+  uStream: { value: 0 },
+  uAppear: { value: 0 },
+  uColLow: { value: hexToVec3(colorLow) },
+  uColHigh: { value: hexToVec3(colorHigh) },
+  uOpacity: { value: opacity },
+  uSize: { value: pointSize },
+  uBrightness: { value: brightness },
+  uWaveHeight: { value: waveHeight },
+  uFlow: { value: flow },
+  uScale: { value: scale },
+  uCursor: { value: new THREE.Vector3() },
+  uRepelRadius: { value: pointerRadius },
+  uRepelStrength: { value: pointerStrength },
+  uActivity: { value: 0 },
+};
+
+const vertexShader = `
+uniform float uTime; uniform float uStream; uniform float uSize; uniform float uWaveHeight; uniform float uFlow; uniform float uScale;
+uniform vec3 uColLow; uniform vec3 uColHigh;
+uniform vec3 uCursor; uniform float uRepelRadius; uniform float uRepelStrength; uniform float uActivity;
+varying float vFade; varying vec3 vColor;
+${SNOISE}
+void main() {
+  vec3 wp = vec3(position.x * 13.0, 0.0, position.z * 25.0);
+  wp.x += position.y * 6.0;
+  float zc = wp.z + uStream;
+  float wn = snoise(vec3(wp.x * 0.08, zc * 0.08, uTime * 0.15 * uFlow)) * 2.0;
+  wn += snoise(vec3(wp.x * 0.16, zc * 0.16, uTime * 0.3 * uFlow)) * 0.8;
+  wp.y += wn * uWaveHeight;
+
+  vec3 finalPos = wp * uScale;
+  vec4 modelPosition = modelMatrix * vec4(finalPos, 1.0);
+  vec3 toP = modelPosition.xyz - uCursor;
+  float cd = length(toP);
+  float fall = smoothstep(uRepelRadius, 0.0, cd);
+  modelPosition.xyz += normalize(toP + vec3(0.0001)) * fall * uRepelStrength * uActivity;
+  vec4 mvPosition = viewMatrix * modelPosition;
+
+  float colMix = smoothstep(-3.0, 3.0, position.y + position.x * 0.5);
+  vColor = mix(uColLow, uColHigh, clamp(colMix, 0.0, 1.0));
+  vFade = 1.0;
+
+  gl_PointSize = uSize * (10.0 / -mvPosition.z);
+  gl_PointSize = max(gl_PointSize, 1.5);
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const fragmentShader = `
+uniform float uOpacity; uniform float uBrightness; uniform float uAppear;
+varying float vFade; varying vec3 vColor;
+void main() {
+  vec2 xy = gl_PointCoord - 0.5;
+  float ll = length(xy);
+  if (ll > 0.5) discard;
+  float a = smoothstep(0.5, 0.1, ll);
+  gl_FragColor = vec4(vColor * uBrightness, vFade * a * uOpacity * uAppear);
+}
+`;
+
+const mat = new THREE.ShaderMaterial({
+  uniforms, vertexShader, fragmentShader,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+});
+
+const points = new THREE.Points(geo, mat);
+points.frustumCulled = false;
+points.layers.enable(LAYERS.ENTIRE_SCENE);
+group.add(points);
+
+/* ---------------- ambient motes ---------------- */
+let atmoMat, atmoPts;
+(function () {
+  const N = Math.round(atmoCount);
+  const positions = new Float32Array(N * 3);
+  const sizes = new Float32Array(N);
+  const seeds = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    positions[i * 3] = 2 * Math.random() - 1;
+    positions[i * 3 + 1] = 2 * Math.random() - 1;
+    positions[i * 3 + 2] = 2 * Math.random() - 1;
+    sizes[i] = atmoSize * (0.4 + Math.random());
+    seeds[i] = Math.random();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  g.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  g.setAttribute('seed', new THREE.BufferAttribute(seeds, 1));
+
+  atmoMat = new THREE.ShaderMaterial({
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    uniforms: {
+      uTime: { value: 0 },
+      uColor: { value: hexToVec3(atmoColor) },
+      uRes: { value: new THREE.Vector2(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio) },
+    },
+    vertexShader: `
+attribute float size; attribute float seed; uniform float uTime; uniform vec2 uRes;
+varying float vA;
+vec3 warp(vec3 p, float t){ float c=0.9,a=1.9,b=0.02,s=0.05; p*=2.;
+  p.x+=c*sin(s*t+a*p.y)+t*b; p.y+=c*cos(s*t+a*p.x); p.y+=c*sin(s*t+a*p.z)+t*b;
+  p.z+=c*cos(s*t+a*p.y); p.z+=c*sin(s*t+a*p.x)+t*b; p.x+=c*cos(s*t+a*p.z);
+  return cos(p+vec3(1,2,4)); }
+void main(){
+  vec3 v = position*4.0 + warp(position, uTime)*1.2;
+  vec4 mv = modelViewMatrix * vec4(v, 1.0);
+  float r = length(v); float farF = 1.0 - smoothstep(5.0, 6.5, r); float nearF = smoothstep(0.0, 0.5, -mv.z);
+  vA = farF * nearF;
+  gl_PointSize = size * uRes.y / 900.0 / -mv.z; gl_PointSize = max(gl_PointSize, 1.0);
+  gl_Position = projectionMatrix * mv;
+}
+`,
+    fragmentShader: `
+uniform vec3 uColor; varying float vA;
+void main(){ vec2 p = gl_PointCoord - 0.5; float l = length(p); if (l > 0.5) discard;
+  float tex = smoothstep(0.5, 0.0, l); gl_FragColor = vec4(uColor * tex, tex * vA * 0.6); }
+`,
+  });
+
+  atmoPts = new THREE.Points(g, atmoMat);
+  atmoPts.frustumCulled = false;
+  atmoPts.layers.enable(LAYERS.ENTIRE_SCENE);
+  scene.add(atmoPts);
+})();
+
+/* ---------------- postprocessing ---------------- */
+const renderPass = new RenderPass(scene, camera);
+
+const torusComposer = new EffectComposer(renderer);
+torusComposer.renderToScreen = false;
+torusComposer.addPass(renderPass);
+torusComposer.addPass(new ShaderPass(GammaCorrectionShader));
+torusComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.22, 0.2, 0));
+torusComposer.addPass(new ShaderPass(CopyShader));
+
+const bloomComposer = new EffectComposer(renderer);
+bloomComposer.renderToScreen = false;
+bloomComposer.addPass(renderPass);
+bloomComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.55, 0));
+bloomComposer.addPass(new ShaderPass(GammaCorrectionShader));
+
+const FinalPassShader = {
+  uniforms: {
+    iTime: { value: 0 },
+    tDiffuse: { value: null },
+    torusTexture: { value: null },
+    bloomTexture: { value: null },
+    haloTexture: { value: null },
+    uBg: { value: hexToVec3(bgColor) },
+    uFlameA: { value: hexToVec3(flameColor) },
+    uFlameB: { value: hexToVec3(flameColor2) },
+    uFlameAmt: { value: flameAmt },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
+  fragmentShader: `
+uniform float iTime; uniform sampler2D tDiffuse; uniform sampler2D bloomTexture; uniform sampler2D torusTexture; uniform sampler2D haloTexture;
+uniform vec3 uBg; uniform vec3 uFlameA; uniform vec3 uFlameB; uniform float uFlameAmt;
+varying vec2 vUv;
+vec3 warp3d(vec3 pos, float t){ float curv=.8,a=1.9,b=0.7; pos*=2.;
+  pos.x+=curv*sin(t+a*pos.y)+t*b; pos.y+=curv*cos(t+a*pos.x);
+  pos.y+=curv*sin(t+a*pos.z)+t*b; pos.z+=curv*cos(t+a*pos.y);
+  pos.z+=curv*sin(t+a*pos.x)+t*b; pos.x+=curv*cos(t+a*pos.z);
+  return 0.5+0.5*cos(pos.xyz+vec3(1,2,4)); }
+void main(){
+  vec2 uv = 2.*vUv - 1.;
+  vec3 w = pow(warp3d(vec3(uv.x, sin(uv.y), uv.y), iTime*1.5), vec3(1.5));
+  vec3 flame = 1.5*uFlameA*w.x; flame*=w.y; flame += uFlameB*w.z;
+  flame *= smoothstep(0.25, 1., abs(uv.y));
+  float md = smoothstep(-0.7, 1., -uv.y*uv.x); flame *= md*md;
+  vec3 bg = uBg * (1.0 - 0.4 * length(uv));
+  vec3 halo = texture2D(haloTexture, vUv).xyz;
+  gl_FragColor = vec4(bg + flame*uFlameAmt + texture2D(bloomTexture, vUv).xyz + texture2D(torusTexture, vUv).xyz + texture2D(tDiffuse, vUv).xyz + halo, 1.);
+}
+`,
+};
+
+const finalPass = new ShaderPass(FinalPassShader);
+finalPass.uniforms.haloTexture.value = new THREE.Texture();
+
+const finalComposer = new EffectComposer(renderer);
+finalComposer.addPass(renderPass);
+finalComposer.addPass(finalPass);
+
+finalPass.uniforms.bloomTexture.value = bloomComposer.renderTarget1.texture;
+finalPass.uniforms.torusTexture.value = torusComposer.renderTarget1.texture;
+
+/* ---------------- scroll + pointer input ---------------- */
+let scrollTarget = 0, scrollSmooth = 0, scrollCurrent = 0;
+const scrollHostEl = document.getElementById('scroll-host');
+
+function computeScrollTarget() {
+  const max = scrollHostEl.offsetHeight - window.innerHeight;
+  scrollTarget = max > 0 ? clamp(window.scrollY / max, 0, 1) : 0;
+}
+window.addEventListener('scroll', computeScrollTarget, { passive: true });
+
+const mouseTarget = { x: 0, y: 0 };
+const mouse = { x: 0, y: 0 };
+const POINTER = { world: new THREE.Vector3(), activity: 0, active: false, lastMove: performance.now() };
+
+window.addEventListener('mousemove', (e) => {
+  mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouseTarget.y = -((e.clientY / window.innerHeight) * 2 - 1);
+  POINTER.active = true;
+  POINTER.lastMove = performance.now();
+}, { passive: true });
+window.addEventListener('mouseout', () => { POINTER.active = false; });
+
+const _ndc = new THREE.Vector3(), _dir = new THREE.Vector3(), _tgt = new THREE.Vector3();
+function updatePointerWorld() {
+  _tgt.set(0, 0, 0);
+  if (POINTER.active) {
+    _ndc.set(mouse.x, mouse.y, 0.5).unproject(camera);
+    _dir.copy(_ndc).sub(camera.position).normalize();
+    const dn = _dir.z;
+    if (Math.abs(dn) > 1e-4) {
+      const tt = -camera.position.z / dn;
+      if (tt > 0 && Number.isFinite(tt)) _tgt.copy(camera.position).addScaledVector(_dir, tt);
+    }
+  }
+  POINTER.world.lerp(_tgt, 0.12);
+  const idle = (performance.now() - POINTER.lastMove) / 1000;
+  POINTER.activity += (((POINTER.active && idle < 3) ? 1 : 0) - POINTER.activity) * 0.06;
+}
+
+/* ---------------- per-frame scene update ---------------- */
+const sceneState = { stream: 0, appearStart: performance.now(), t0: performance.now() / 1000 };
+
+function renderScene(scroll, m) {
+  const t = performance.now() / 1000;
+  const dt = Math.min(0.05, t - sceneState.t0); sceneState.t0 = t;
+  uniforms.uTime.value = t;
+
+  sceneState.stream += dt * (flow * 2.0) * 4.0;
+  uniforms.uStream.value = sceneState.stream;
+  uniforms.uWaveHeight.value = waveHeight * (1 + scroll * scrollRise);
+
+  const ea = Math.min(scroll / 0.35, 1.0);
+  const e = ea * ea * (3 - 2 * ea);
+  const camY = Lerp(camStartY, camEndY, e);
+  const camZ = Lerp(camStartZ, camEndZ, e);
+  camera.position.set(m.x * parallax, camY + m.y * parallax * 0.3, camZ);
+  camera.lookAt(m.x * parallax * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e));
+  group.rotation.x = -tilt;
+  group.rotation.y = 0;
+  updatePointerWorld();
+
+  uniforms.uCursor.value.copy(POINTER.world);
+  uniforms.uActivity.value = POINTER.activity;
+  const elapsed = (performance.now() - sceneState.appearStart) / 1000;
+  uniforms.uAppear.value = Math.max(0, Math.min(1, (elapsed - 0.2) / 1.4));
+
+  const th = performance.now() / 1000;
+  atmoMat.uniforms.uTime.value = th * atmoSpeed * 8.0;
+  atmoPts.position.copy(camera.position);
+  finalPass.uniforms.iTime.value = th;
+}
+
+/* ---------------- hero content fade with scroll ---------------- */
+const heroInner = document.querySelector('.hero-inner');
+const scrollHint = document.getElementById('scroll-hint');
+
+/* ---------------- render loop ---------------- */
+function animate() {
+  requestAnimationFrame(animate);
+
+  scrollSmooth = Lerp(scrollSmooth, scrollTarget, 0.10);
+  scrollCurrent = Lerp(scrollCurrent, scrollSmooth, 0.06);
+  mouse.x = Lerp(mouse.x, mouseTarget.x, 0.06);
+  mouse.y = Lerp(mouse.y, mouseTarget.y, 0.06);
+
+  renderScene(scrollCurrent, mouse);
+
+  if (heroInner) {
+    const fade = clamp(1 - scrollCurrent * 2.4, 0, 1);
+    heroInner.style.opacity = fade;
+    heroInner.style.transform = `translateY(${(1 - fade) * -24}px)`;
+  }
+  if (scrollHint) scrollHint.style.opacity = clamp(1 - scrollCurrent * 6, 0, 1);
+
+  camera.layers.set(LAYERS.TORUS_SCENE); torusComposer.render();
+  camera.layers.set(LAYERS.BLOOM_SCENE); bloomComposer.render();
+  camera.layers.set(LAYERS.ENTIRE_SCENE); finalComposer.render();
+}
+animate();
+
+/* ---------------- resize ---------------- */
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const dpr = window.devicePixelRatio;
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  [torusComposer, bloomComposer, finalComposer].forEach((c) => {
+    c.setPixelRatio(dpr);
+    c.setSize(w, h);
+  });
+  computeScrollTarget();
+}
+window.addEventListener('resize', resize);
+resize();
+</script>
+
+<script>
+  // mobile nav toggle
+  const navToggle = document.getElementById('navToggle');
+  const navLinks = document.getElementById('navLinks');
+  navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+
+  // reveal keyword pills, staggered, the first time they scroll into view
+  const pillCloud = document.getElementById('pillCloud');
+  if (pillCloud) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          pillCloud.classList.add('in-view');
+          io.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    io.observe(pillCloud);
+  }
+
+  // reveal the eight service cards, staggered, the first time they scroll into view
+  const servicesGrid = document.getElementById('servicesGrid');
+  if (servicesGrid) {
+    const ioServices = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          servicesGrid.classList.add('in-view');
+          ioServices.disconnect();
+        }
+      });
+    }, { threshold: 0.15 });
+    ioServices.observe(servicesGrid);
+  }
+</script>
+
+</body>
+</html>
